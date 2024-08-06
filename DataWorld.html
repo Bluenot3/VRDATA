@@ -1,0 +1,526 @@
+<html><head><base href="https://voiceGPT.com?settings=after%20I%20finish%20my%20question%20it%20should%20be%20%22Processing%22%20not%20ready%20to%20listen%20text%20!!%20Complete%20code...initially%20it%20would%20just%20be%20written%20Ready%20to%20listen%20then%20%20when%20you%20click%20on%20ay%20buttons%20listening%20as%20told%20but%20after%20question%20finishes%20processing%20then%20responding%20.....%20Keep%20all%20code%20same%20don't%20change%20anything.%20%20Just%20write.%20Important%20:%20turn%20your%20notication%20volume%20to%20zero%20to%20use%20continuous%20Listening%20%22%20below%20the%20ready%20to%20listen%20text......keep%20everything%20except%20that%20same">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Assistant</title>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #1a1a1a;
+    font-family: Arial, sans-serif;
+    color: #ffffff;
+    font-size: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .container {
+    text-align: center;
+    position: relative;
+    width: 250px;
+    height: 320px;
+    margin-bottom: 20px;
+  }
+  .circle {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    color: #1a1a1a;
+    transition: all 0.3s ease;
+    z-index: 2;
+  }
+  .circle-jiggle {
+    animation: jiggle 0.5s infinite;
+  }
+  @keyframes jiggle {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    25% { transform: translate(-50%, -50%) rotate(1deg); }
+    75% { transform: translate(-50%, -50%) rotate(-1deg); }
+  }
+  .waveform {
+    display: none;
+    width: 160px;
+    height: 80px;
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+  }
+  .waveform-bar {
+    background: #ffffff;
+    width: 40px;
+    height: 100%;
+    margin: 0 6px;
+    border-radius: 20px;
+    display: inline-block;
+    animation: waveform-animation 0.5s ease-in-out infinite;
+  }
+  @keyframes waveform-animation {
+    0%, 100% { height: 40px; }
+    50% { height: 80px; }
+  }
+  .controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 180px;
+    position: relative;
+    z-index: 3;
+  }
+  .control-button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background-color: #ffffff;
+    color: #1a1a1a;
+    font-size: 20px;
+    margin: 0 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease;
+  }
+  .control-button:hover {
+    transform: scale(1.1);
+  }
+  .stop-button {
+    background-color: #ff6b6b;
+  }
+  .continuous-button {
+    background-color: #4CAF50;
+    color: white;
+  }
+  .continuous-active {
+    background-color: #45a049;
+  }
+  .status {
+    color: #ffffff;
+    font-size: 12px;
+    margin-top: 20px;
+    position: relative;
+    z-index: 1;
+    font-style: italic;
+  }
+  .info-section {
+    max-width: 500px;
+    text-align: center;
+    padding: 16px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-top: 24px;
+  }
+  .info-section h2 {
+    color: #4CAF50;
+    margin-bottom: 12px;
+    font-size: 18px;
+  }
+  .info-section p {
+    line-height: 1.4;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+  .info-section ul {
+    padding-left: 20px;
+  }
+  .info-section li {
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .activation-border {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 9999;
+  }
+  .activation-border::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 6px solid rgba(0, 122, 255, 0.7);
+    box-shadow: 0 0 30px rgba(0, 122, 255, 0.7);
+    border-radius: 16px;
+    filter: blur(10px);
+  }
+  .activation-border.active {
+    opacity: 1;
+  }
+  .important-note {
+    color: #ff6b6b;
+    font-size: 11px;
+    margin-top: 5px;
+  }
+</style>
+</head>
+<body>
+  <div class="activation-border" id="activationBorder"></div>
+  <div class="container">
+    <div class="circle" id="statusCircle"></div>
+    <div class="waveform" id="waveform">
+      <div class="waveform-bar"></div>
+      <div class="waveform-bar"></div>
+      <div class="waveform-bar"></div>
+    </div>
+    <div class="controls">
+      <button class="control-button" id="startButton">►</button>
+      <button class="control-button stop-button" id="stopButton">✕</button>
+      <button class="control-button continuous-button" id="continuousButton">∞</button>
+    </div>
+    <div class="status">
+      <span id="statusText">Ready to listen</span>
+      <div class="important-note">Important: turn your notification volume to zero to use continuous Listening</div>
+    </div>
+  </div>
+
+  <div class="info-section">
+    <h2>Continuous Listening Mode</h2>
+    <p>Continuous listening is a powerful feature that allows WebSim to always be ready for your questions. When enabled, WebSim listens in the background, waiting for you to say the wake word "Hi WebSim" followed by your question.</p>
+    <p>Benefits:</p>
+    <ul>
+      <li>Hands-free operation: Perfect for when your hands are busy or you're multitasking.</li>
+      <li>Quick access: Get answers instantly without needing to activate the assistant manually.</li>
+      <li>Natural interaction: Simply speak as if you're talking to a person nearby.</li>
+    </ul>
+    <p>To use: Just say "Hi WebSim" followed by your question, like "Hi WebSim - What's the weather today?" WebSim will spring to life and answer your query!</p>
+  </div>
+
+  <script>
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
+    const continuousButton = document.getElementById('continuousButton');
+    const statusText = document.getElementById('statusText');
+    const statusCircle = document.getElementById('statusCircle');
+    const waveform = document.getElementById('waveform');
+    const activationBorder = document.getElementById('activationBorder');
+
+    let recognition;
+    let isListening = false;
+    let isSpeaking = false;
+    let isProcessing = false;
+    let isContinuousListening = false;
+    let isWaitingForWakeWord = true;
+    let isActiveListeningPeriod = false;
+
+    let currentTranscript = '';
+    let conversationHistory = [];
+    
+    const silenceThreshold = 3000; // 3 seconds of silence
+    const followUpWindow = 7000; // 7 seconds
+    let lastResponseTime = 0;
+    let silenceTimer;
+    let activationTimer;
+
+    function startSpeechRecognition(isNormalMode = false) {
+      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.continuous = !isNormalMode;
+      recognition.interimResults = true;
+
+      recognition.onstart = handleRecognitionStart;
+      recognition.onresult = (event) => handleRecognitionResult(event, isNormalMode);
+      recognition.onerror = handleRecognitionError;
+      recognition.onend = () => handleRecognitionEnd(isNormalMode);
+
+      recognition.start();
+    }
+
+    function handleRecognitionStart() {
+      isListening = true;
+      updateUI('Listening');
+    }
+
+    function handleRecognitionResult(event, isNormalMode) {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+
+      currentTranscript += finalTranscript;
+
+      const now = Date.now();
+      const isWithinFollowUpWindow = (now - lastResponseTime) < followUpWindow;
+
+      if (isContinuousListening) {
+        handleContinuousListening(finalTranscript, isWithinFollowUpWindow);
+      } else if (finalTranscript && isNormalMode) {
+        processTranscript(isNormalMode);
+      }
+    }
+
+    function handleContinuousListening(finalTranscript, isWithinFollowUpWindow) {
+      const wakeWords = ['websim', 'hey websim', 'hi websim', 'hello', 'hi'];
+      const lowercaseTranscript = finalTranscript.toLowerCase();
+
+      if (isWaitingForWakeWord && wakeWords.some(word => lowercaseTranscript.includes(word))) {
+        handleWakeWord();
+      } else if (!isWaitingForWakeWord && (isWithinFollowUpWindow || isActiveListeningPeriod)) {
+        clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(() => processTranscript(false), silenceThreshold);
+      }
+    }
+
+    function handleWakeWord() {
+      currentTranscript = '';
+      updateUI('Listening');
+      isWaitingForWakeWord = false;
+      activateActivationBorder();
+      resetActivationTimer();
+      isActiveListeningPeriod = true;
+    }
+
+    function processTranscript(isNormalMode) {
+      clearTimeout(silenceTimer);
+      updateUI('Processing');
+      isProcessing = true;
+
+      if (isContinuousListening) {
+        removeWakeWords();
+      }
+
+      getGPT5Response(currentTranscript);
+      currentTranscript = '';
+
+      if (isNormalMode) {
+        stopListening();
+      }
+    }
+
+    function removeWakeWords() {
+      const wakeWords = ['websim', 'hey websim', 'hi websim', 'hello', 'hi'];
+      for (const word of wakeWords) {
+        currentTranscript = currentTranscript.replace(new RegExp(word, 'gi'), '').trim();
+      }
+    }
+
+    function handleRecognitionError(event) {
+      console.error('Speech recognition error:', event.error);
+      restartRecognition();
+    }
+
+    function handleRecognitionEnd(isNormalMode) {
+      if (isListening && !isNormalMode) {
+        restartRecognition();
+      } else if (isNormalMode) {
+        isListening = false;
+        updateUI('Processing');
+      }
+    }
+
+    function restartRecognition() {
+      recognition.stop();
+      setTimeout(() => {
+        if (isListening) {
+          recognition.start();
+        }
+      }, 10);
+    }
+
+    function stopListening() {
+      isListening = false;
+      if (recognition) {
+        recognition.stop();
+      }
+      clearTimeout(silenceTimer);
+      updateUI('Processing');
+      deactivateActivationBorder();
+      isActiveListeningPeriod = false;
+    }
+
+    async function getGPT5Response(userMessage) {
+      try {
+        conversationHistory.push({ role: 'user', content: userMessage });
+        
+        const response = await fetch('/api/gpt5', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: conversationHistory }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        
+        const data = await response.json();
+        conversationHistory.push({ role: 'assistant', content: data.response });
+        
+        updateUI('Responding');
+        speakResponse(data.response);
+      } catch (error) {
+        console.error('Error:', error);
+        speakResponse("I'm sorry, but I encountered an error. Please try again.");
+      } finally {
+        isProcessing = false;
+      }
+    }
+
+    function speakResponse(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+
+      utterance.onstart = () => {
+        isSpeaking = true;
+        updateUI('Responding');
+      };
+
+      utterance.onend = () => {
+        isSpeaking = false;
+        handleResponseEnd();
+      };
+
+      speechSynthesis.speak(utterance);
+    }
+
+    function handleResponseEnd() {
+      if (isContinuousListening) {
+        updateUI('Listening');
+        prepareForNextQuestion();
+      } else {
+        updateUI('Ready to listen');
+        deactivateActivationBorder();
+      }
+      lastResponseTime = Date.now();
+    }
+
+    function prepareForNextQuestion() {
+      isWaitingForWakeWord = true;
+      activateActivationBorder();
+      resetActivationTimer();
+      isActiveListeningPeriod = false;
+    }
+
+    function stopSpeaking() {
+      if (isSpeaking) {
+        speechSynthesis.cancel();
+        isSpeaking = false;
+      }
+      if (isContinuousListening) {
+        isWaitingForWakeWord = true;
+        updateUI('Listening');
+      } else {
+        updateUI('Ready to listen');
+      }
+      deactivateActivationBorder();
+      isActiveListeningPeriod = false;
+    }
+
+    function updateUI(status) {
+      statusText.textContent = status;
+      statusCircle.style.display = status === 'Responding' ? 'none' : 'flex';
+      waveform.style.display = status === 'Responding' ? 'block' : 'none';
+      statusCircle.classList.toggle('circle-jiggle', status === 'Listening');
+      startButton.innerHTML = isListening ? '❚❚' : '►';
+      animateWaveform(status === 'Responding');
+    }
+
+    function animateWaveform(animate) {
+      const bars = document.querySelectorAll('.waveform-bar');
+      bars.forEach((bar, index) => {
+        bar.style.animation = animate ? `waveform-animation ${0.5 + index * 0.1}s ease-in-out infinite` : 'none';
+      });
+    }
+
+    function activateActivationBorder() {
+      activationBorder.classList.add('active');
+    }
+
+    function deactivateActivationBorder() {
+      activationBorder.classList.remove('active');
+    }
+
+    function resetActivationTimer() {
+      clearTimeout(activationTimer);
+      activationTimer = setTimeout(() => {
+        isWaitingForWakeWord = true;
+        deactivateActivationBorder();
+        isActiveListeningPeriod = false;
+      }, followUpWindow);
+    }
+
+    startButton.addEventListener('click', () => {
+      if (!isListening && !isSpeaking) {
+        startSpeechRecognition(!isContinuousListening);
+      } else if (isListening) {
+        stopListening();
+      } else if (isSpeaking) {
+        stopSpeaking();
+      }
+    });
+
+    stopButton.addEventListener('click', () => {
+      if (isListening || isSpeaking) {
+        stopSpeaking();
+        if (isProcessing) {
+          isProcessing = false;
+          conversationHistory.pop();
+        }
+        if (isContinuousListening) {
+          isWaitingForWakeWord = true;
+          updateUI('Listening');
+          startSpeechRecognition(false);
+        } else {
+          stopListening();
+          updateUI('Ready to listen');
+        }
+      }
+      deactivateActivationBorder();
+    });
+
+    continuousButton.addEventListener('click', () => {
+      isContinuousListening = !isContinuousListening;
+      continuousButton.classList.toggle('continuous-active', isContinuousListening);
+      if (isContinuousListening) {
+        isWaitingForWakeWord = true;
+        updateUI('Listening');
+        if (!isListening) {
+          startSpeechRecognition(false);
+        }
+      } else {
+        isWaitingForWakeWord = false;
+        if (isListening) {
+          stopListening();
+          updateUI('Ready to listen');
+        }
+      }
+    });
+
+    // Initialize voices silently
+    speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+
+    // Mute any potential audio feedback
+    if ('AudioContext' in window || 'webkitAudioContext' in window) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContext();
+      const gainNode = audioContext.createGain();
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.connect(audioContext.destination);
+    }
+  </script>
+</body></html>
